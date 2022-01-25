@@ -3,37 +3,129 @@ package wlru_test
 import (
 	"math/rand"
 	"testing"
+	"context"
 
 	"github.com/heucuva/go-wlru"
 )
 
-func TestCache(t *testing.T) {
+func TestPruning(t *testing.T) {
 	c := &wlru.Cache{Capacity: 2}
 
-	if err := c.Set("a", "hello", true); err != nil {
-		t.Fatal(err)
+	input := []wlru.Entry{
+		{"a", "hello", false, false},
+		{"b", "world", false, false},
+		{"c", "matey", false, false},
+		{"d", "ahoy", false, false},
 	}
-	if err := c.Set("b", "world", false); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Set("a", "ahoy", true); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Set("b", "planet", false); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Set("c", "earth", false); err != nil {
-		t.Fatal(err)
-	}
-	if err := c.Set("b", "space", false); err != nil {
-		t.Fatal(err)
-	}
+
 	expected := []wlru.Entry{
-		{Key: "b", Value: "space", IsPermanent: false, IsExpired: false},
-		//{Key: "c", Value: "earth", IsPermanent: false, IsExpired: false}, // this item will be pruned because capacity is 2
-		{Key: "a", Value: "ahoy", IsPermanent: true, IsExpired: false},
+		input[3],
+		input[2],
 	}
-	snapshot := c.SnapshotList()
+
+	for _, entry := range input {
+		if err := c.Set(entry.Key, entry.Value, entry.IsPermanent); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	compareSnapshot(t, c.SnapshotList(), expected)
+}
+
+func TestPermanency(t *testing.T) {
+	c := &wlru.Cache{Capacity: 2}
+
+	input := []wlru.Entry{
+		{"a", "hello", true, false},
+		{"b", "world", true, false},
+		{"c", "matey", false, false},
+		{"d", "ahoy", false, false},
+	}
+
+	expected := []wlru.Entry{
+		input[1],
+		input[0],
+	}
+
+	for _, entry := range input {
+		if err := c.Set(entry.Key, entry.Value, entry.IsPermanent); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	compareSnapshot(t, c.SnapshotList(), expected)
+}
+
+func TestExpiration(t *testing.T) {
+	c := &wlru.Cache{}
+
+	input := []wlru.Entry{
+		{"a", "hello", false, false},
+		{"b", "world", false, true},
+		{"c", "matey", false, false},
+		{"d", "ahoy", false, true},
+	}
+
+	expectedBeforeRemove := []wlru.Entry{
+		input[3],
+		input[2],
+		input[1],
+		input[0],
+	}
+
+	expectedAfterPrune := []wlru.Entry{
+		input[2],
+		input[0],
+	}
+
+	expiredCtx, cancel := context.WithCancel(context.Background())
+
+	for _, entry := range input {
+		ctx := context.Background()
+		if entry.IsExpired {
+			ctx = expiredCtx
+		}
+		if err := c.SetWithContext(ctx, entry.Key, entry.Value, entry.IsPermanent); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cancel()
+
+	compareSnapshot(t, c.SnapshotList(), expectedBeforeRemove)
+
+	c.RemoveExpired()
+
+	compareSnapshot(t, c.SnapshotList(), expectedAfterPrune)
+}
+
+func TestUnbounded(t *testing.T) {
+	c := &wlru.Cache{}
+
+	input := []wlru.Entry{
+		{"a", "hello", false, false},
+		{"b", "world", false, false},
+		{"c", "matey", false, false},
+		{"d", "ahoy", false, false},
+	}
+
+	expected := []wlru.Entry{
+		input[3],
+		input[2],
+		input[1],
+		input[0],
+	}
+
+	for _, entry := range input {
+		if err := c.Set(entry.Key, entry.Value, entry.IsPermanent); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	compareSnapshot(t, c.SnapshotList(), expected)
+}
+
+func compareSnapshot(t *testing.T, snapshot, expected []wlru.Entry) {
 	if len(snapshot) != len(expected) {
 		t.Fatalf("unexpected snapshot size %d != expected %d", len(snapshot), len(expected))
 	}
