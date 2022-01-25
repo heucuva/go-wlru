@@ -1,6 +1,9 @@
 # go-wlru
 Thread-safe LRU cache with permanency and context-based expiration
 
+[![Go](https://github.com/heucuva/go-wlru/actions/workflows/go.yml/badge.svg)](https://github.com/heucuva/go-wlru/actions/workflows/go.yml)
+
+
 ## Operational Complexity (Time)
 
 | Operation | Best        | Average     | Worst       |
