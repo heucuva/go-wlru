@@ -6,7 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Cache is a fast, lock-free Least Recently Used cache with partitioning and weighting.
+// Cache is a fast, lock-free/thread-safe Least Recently Used cache with
+// permanency and context-based expiration.
 type Cache struct {
 	// Capacity if > 0 will limit the number of entries the map Cache will contain
 	// if == 0, then no limit
