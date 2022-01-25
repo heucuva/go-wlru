@@ -146,10 +146,20 @@ func compareSnapshot(t *testing.T, snapshot, expected []wlru.Entry) {
 	}
 }
 
-func BenchmarkSet(b *testing.B) {
+func BenchmarkSet100k(b *testing.B) {
 	c := &wlru.Cache{}
 
 	for i := 0; i < 100000; i++ {
+		if err := c.Set(i, rand.Int63(), false); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkSet1M(b *testing.B) {
+	c := &wlru.Cache{}
+
+	for i := 0; i < 1000000; i++ {
 		if err := c.Set(i, rand.Int63(), false); err != nil {
 			b.Fatal(err)
 		}
