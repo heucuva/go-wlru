@@ -2,20 +2,16 @@ package wlru
 
 import (
 	"sync"
-	"unsafe"
 )
 
 type safeList struct {
 	// mu is a RWMutex to protect interactions with the list container
 	mu sync.RWMutex
 	// li is a double-ended list container
-	li *embeddedList
-	// once is an initialization gate
-	once sync.Once
+	li embeddedList
 }
 
 func (l *safeList) remove(n *node) {
-	l.init()
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -23,7 +19,6 @@ func (l *safeList) remove(n *node) {
 }
 
 func (l *safeList) pushHead(n *node) {
-	l.init()
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -31,7 +26,6 @@ func (l *safeList) pushHead(n *node) {
 }
 
 func (l *safeList) tail() *node {
-	l.init()
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -39,7 +33,6 @@ func (l *safeList) tail() *node {
 }
 
 func (l *safeList) head() *node {
-	l.init()
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -47,7 +40,6 @@ func (l *safeList) head() *node {
 }
 
 func (l *safeList) prev(n *node) *node {
-	l.init()
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -55,18 +47,8 @@ func (l *safeList) prev(n *node) *node {
 }
 
 func (l *safeList) next(n *node) *node {
-	l.init()
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	return l.li.Next(n)
-}
-
-func (l *safeList) init() {
-	l.once.Do(func() {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-		var n node
-		l.li = newEmbeddedList(unsafe.Offsetof(n.link))
-	})
 }

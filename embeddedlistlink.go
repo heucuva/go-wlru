@@ -10,8 +10,8 @@ type embeddedListLink struct {
 	next *node
 }
 
-func (l *embeddedListLink) remove(linkFieldOfs uintptr, head **node, tail **node) bool {
-	if !l.isContained(linkFieldOfs, *head) {
+func (l *embeddedListLink) remove(head **node, tail **node) bool {
+	if !l.isContained(*head) {
 		return false
 	}
 	if l.prev == nil {
@@ -30,8 +30,8 @@ func (l *embeddedListLink) remove(linkFieldOfs uintptr, head **node, tail **node
 	return true
 }
 
-func (l *embeddedListLink) isContained(linkFieldOfs uintptr, head *node) bool {
-	return l.prev != nil || head == l.getItem(linkFieldOfs)
+func (l *embeddedListLink) isContained(head *node) bool {
+	return l.prev != nil || head == l.getItem(unsafe.Offsetof(head.link))
 }
 
 func (l *embeddedListLink) getItem(linkFieldOfs uintptr) *node {

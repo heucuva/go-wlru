@@ -5,17 +5,10 @@ package wlru
 // This cointainer does not take ownership of its contents, so the application
 // must remove items manually.
 
-func newEmbeddedList(linkField uintptr) *embeddedList {
-	return &embeddedList{
-		linkField: linkField,
-	}
-}
-
 type embeddedList struct {
-	head      *node
-	tail      *node
-	count     int
-	linkField uintptr
+	head  *node
+	tail  *node
+	count int
 }
 
 func (c *embeddedList) getLink(obj *node) *embeddedListLink {
@@ -52,7 +45,7 @@ func (c *embeddedList) Count() int {
 }
 
 func (c *embeddedList) Remove(obj *node) *node {
-	if c.getLink(obj).remove(c.linkField, &c.head, &c.tail) {
+	if c.getLink(obj).remove(&c.head, &c.tail) {
 		c.count--
 	}
 	return obj
@@ -169,5 +162,5 @@ func (c *embeddedList) IsEmpty() bool {
 }
 
 func (c *embeddedList) IsContained(cur *node) bool {
-	return c.getLink(cur).isContained(c.linkField, c.head)
+	return c.getLink(cur).isContained(c.head)
 }
