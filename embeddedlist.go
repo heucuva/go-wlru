@@ -1,7 +1,5 @@
 package wlru
 
-import "unsafe"
-
 // This is a double-linked list container - it allows for linear iteration over
 // its contents.
 // This cointainer does not take ownership of its contents, so the application
@@ -21,7 +19,7 @@ type embeddedList struct {
 }
 
 func (c *embeddedList) getLink(obj *node) *embeddedListLink {
-	return getListLink(unsafe.Pointer(obj), c.linkField)
+	return getListLink(obj)
 }
 
 func (c *embeddedList) First() *node {

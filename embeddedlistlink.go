@@ -17,12 +17,12 @@ func (l *embeddedListLink) remove(linkFieldOfs uintptr, head **node, tail **node
 	if l.prev == nil {
 		*head = l.next
 	} else {
-		getListLink(unsafe.Pointer(l.prev), linkFieldOfs).next = l.next
+		getListLink(l.prev).next = l.next
 	}
 	if l.next == nil {
 		*tail = l.prev
 	} else {
-		getListLink(unsafe.Pointer(l.next), linkFieldOfs).prev = l.prev
+		getListLink(l.next).prev = l.prev
 	}
 
 	l.next = nil
@@ -40,6 +40,6 @@ func (l *embeddedListLink) getItem(linkFieldOfs uintptr) *node {
 	return m
 }
 
-func getListLink(obj unsafe.Pointer, linkFieldOfs uintptr) *embeddedListLink {
-	return (*embeddedListLink)(unsafe.Add(obj, linkFieldOfs))
+func getListLink(obj *node) *embeddedListLink {
+	return &obj.link
 }
