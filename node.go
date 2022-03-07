@@ -3,7 +3,6 @@ package wlru
 import (
 	"context"
 	"sync/atomic"
-	"unsafe"
 
 	"github.com/pkg/errors"
 )
@@ -14,8 +13,7 @@ type node struct {
 	ctx       atomic.Value // context.Context
 	permanent atomic.Value // bool
 
-	left  unsafe.Pointer // *node
-	right unsafe.Pointer // *node
+	link embeddedListLink
 }
 
 func newNode(ctx context.Context, key, value interface{}, permanent bool) (*node, error) {
@@ -55,14 +53,6 @@ func (n *node) isExpired() bool {
 func (n *node) isPermanent() bool {
 	v, _ := n.permanent.Load().(bool)
 	return v
-}
-
-func (n *node) prev() *node {
-	return (*node)(atomic.LoadPointer(&n.left))
-}
-
-func (n *node) next() *node {
-	return (*node)(atomic.LoadPointer(&n.right))
 }
 
 func (n *node) update(other *node) {

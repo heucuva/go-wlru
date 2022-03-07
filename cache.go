@@ -15,7 +15,7 @@ type Cache struct {
 
 	// cache is a doubly-linked list which tracks order of the all entries.
 	// head is most recent, tail is least.
-	cache locklessList
+	cache safeList
 	// items holds items that are O(1) for key/value lookup and O(1) for removal
 	items safeMap
 }
@@ -103,7 +103,7 @@ func (c *Cache) set(n *node) error {
 	entry = c.cache.tail()
 	for c.Capacity > 0 && c.Size() > c.Capacity && entry != nil {
 		// take note of our next entry
-		prev := entry.prev()
+		prev := c.cache.prev(entry)
 		// are we looking at a permanent entry?
 		if entry.isPermanent() && !entry.isExpired() {
 			// we've found a permanent entry (that's not expired), skip it.
@@ -143,7 +143,7 @@ func (c *Cache) Remove(key interface{}) (bool, error) {
 // pertenent cache information. Entries are ordered from MRU..LRU (0..n)
 func (c *Cache) SnapshotList() []Entry {
 	var entries []Entry
-	for entry := c.cache.head(); entry != nil; entry = entry.next() {
+	for entry := c.cache.head(); entry != nil; entry = c.cache.next(entry) {
 		entries = append(entries, entry.toEntry())
 	}
 	return entries
@@ -153,7 +153,7 @@ func (c *Cache) SnapshotList() []Entry {
 func (c *Cache) Clear() {
 	entry := c.cache.head()
 	for entry != nil {
-		prev := entry.next()
+		prev := c.cache.next(entry)
 		c.cache.remove(entry)
 		entry = prev
 	}
@@ -166,7 +166,7 @@ func (c *Cache) RemoveExpired() int {
 	var numExpired int
 	entry := c.cache.head()
 	for entry != nil {
-		next := entry.next()
+		next := c.cache.next(entry)
 		if entry.isExpired() {
 			c.cache.remove(entry)
 			c.items.remove(entry.key)
